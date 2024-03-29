@@ -1,0 +1,12 @@
+SELECT * FROM Sailors;
+SELECT Sailors.A FROM Sailors;
+SELECT S.A FROM Sailors S;
+SELECT * FROM Sailors S WHERE S.A < 3;
+SELECT * FROM Sailors, Reserves WHERE Sailors.A = Reserves.G;
+SELECT * FROM Sailors S1, Sailors S2 WHERE S1.A < S2.A;
+SELECT DISTINCT R.G FROM Reserves R;
+SELECT * FROM Sailors ORDER BY Sailors.B;
+SELECT Reserves.H, SUM(Reserves.G * Reserves.G) FROM Reserves GROUP BY Reserves.H;
+SELECT SUM(1) FROM Sailors GROUP BY Sailors.B;
+SELECT Sailors.B, Sailors.C FROM Sailors, Reserves WHERE Sailors.A = Reserves.G GROUP BY Sailors.B, Sailors.C ORDER BY Sailors.C, Sailors.B;
+SELECT SUM(Sailors.A) FROM Sailors, Reserves;
