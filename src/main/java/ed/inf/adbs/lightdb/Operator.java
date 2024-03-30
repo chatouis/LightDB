@@ -1,8 +1,6 @@
 package ed.inf.adbs.lightdb;
 
-import java.util.List;
 import java.io.IOException;
-import java.util.Iterator;
 
 public abstract class Operator {
     public abstract String getNextTuple() throws IOException;

@@ -6,10 +6,10 @@ import java.io.IOException;
 
 public class ScanOperator extends Operator{
     private BufferedReader reader;
-    private static String inputFile;
 
     public ScanOperator(String inputFile) throws IOException{
         reader = new BufferedReader(new FileReader(inputFile));
+        reader.mark(8192); // 8192 is defaultCharBufferSize
     }
     
     @Override
@@ -23,7 +23,6 @@ public class ScanOperator extends Operator{
 
     @Override
     public void reset() throws IOException {
-        reader.close();
-        reader = new BufferedReader(new FileReader(inputFile));
+        reader.reset();
     }
 }

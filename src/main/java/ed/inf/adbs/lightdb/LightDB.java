@@ -106,22 +106,23 @@ public class LightDB {
 				// 2. use expression to extract info
 				Table table = (Table) plainSelect.getFromItem();
 				logger.log(Level.INFO, "Table name: " + table.getName());
-				EqualsTo equalsTo = (EqualsTo) plainSelect.getWhere();
-				Column a = (Column) equalsTo.getLeftExpression();
-				logger.log(Level.INFO, "Right expression: " + a);
-				Column b = (Column) equalsTo.getRightExpression();
-				logger.log(Level.INFO, "Right expression: " + b);
-
+				if (plainSelect.getWhere() instanceof EqualsTo) {
+					EqualsTo equalsTo = (EqualsTo) plainSelect.getWhere();
+					Column a = (Column) equalsTo.getLeftExpression();
+					logger.log(Level.INFO, "Right expression: " + a);
+					Column b = (Column) equalsTo.getRightExpression();
+					logger.log(Level.INFO, "Right expression: " + b);
+				}
 				logger.log(Level.INFO, "----------------------------------");
 
 				// 3. use net.sf.jsqlparser.util to extract table names, where clause, etc.
 				TablesNamesFinder tablesNamesFinder = new TablesNamesFinder();
 				logger.log(Level.INFO, "Table names: " + tablesNamesFinder.getTableList(statement));			
 
-				ExpressionDeParser expr = new ExpressionDeParser();
+				ExpressionDeParser deParser = new ExpressionDeParser();
 				Expression where = plainSelect.getWhere();
-				where.accept(expr);
-				logger.log(Level.INFO, "Where clause: " + expr.getBuffer().toString());
+				where.accept(deParser);
+				logger.log(Level.INFO, "Where clause: " + deParser.getBuffer().toString());
 
 				plainSelect.getWhere().accept(new ExpressionVisitorAdapter() {
 					@Override
