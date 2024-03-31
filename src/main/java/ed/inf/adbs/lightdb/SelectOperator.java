@@ -8,14 +8,14 @@ import java.util.Set;
 import net.sf.jsqlparser.expression.Expression;
 
 public class SelectOperator extends ScanOperator{
-    public Map<String, List<String>> schema;
+    public List<String> schema;
     public Expression whereExpression;
     public List<String> tables;
 
-    public SelectOperator(String inputFile, List<String> tables, Expression whereExpression) throws IOException {
+    public SelectOperator(String inputFile, Expression whereExpression, List<String> schema) throws IOException {
         super(inputFile);
-        this.tables = tables;
         this.whereExpression = whereExpression;
+        this.schema = schema;
     }
 
     @Override
@@ -24,13 +24,16 @@ public class SelectOperator extends ScanOperator{
         if (tuple == null) {
             return null;
         }
-        EvaluateCondition deparser = new EvaluateCondition(tables, whereExpression, tuple) {};
+
+        EvaluateCondition deparser = new EvaluateCondition(schema, whereExpression, tuple) {};
         deparser.setBuffer(new StringBuilder());
         whereExpression.accept(deparser);
         if (deparser.value) {
             return tuple;
         }
-        return null;
+        else {
+            return getNextTuple();
+        }
     }
 
 }

@@ -41,91 +41,50 @@ public class LightDB {
 		logger.setLevel(Level.INFO);
 
 		String databaseDir = "samples/db";
-		String inputSQL = "samples/input/query5.sql";
+		String inputSQL = "samples/input/query1.sql";
 		String outputFile = "samples/output/query1.csv";
 
 		// if (args.length != 3) {
 		// 	System.err.println("Usage: LightDB database_dir input_file output_file");
 		// 	return;
 		// }
-
 		// String databaseDir = args[0];
 		// String inputSQL = args[1];
 		// String outputFile = args[2];
 
-		parsingExample(inputSQL);
+		// parsingExample(inputSQL);
 		
-		// try {
-		// 	Map<String, List<String>> schema = loadSchema(databaseDir + "/schema.txt");
+		try {
+			Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
 
-		// 	List<Join> tables = parsingTables(inputSQL);
-		// 	Expression whereExpression = parsingWhere(inputSQL);
+			FromItem fromItem = Utils.parsingFromItem(inputSQL);
+			List<Join> joins = Utils.parsingJoins(inputSQL);
+			Set<String> tables = Utils.parsingTablesSet(inputSQL);
+			Expression where = Utils.parsingWhere(inputSQL);
 
-		// 	logger.log(Level.INFO, "----------------------------------");
+			logger.log(Level.INFO, "----------------------------------");
 			
-		// 	// ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + table + ".csv");
-		// 	// scanOperator.dump();
+			if (fromItem != null && where == null && joins == null ) {
+				ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + (Table)fromItem + ".csv");
+				scanOperator.dump();
+			}
 
-		// 	logger.log(Level.INFO, "----------------------------------");
+			logger.log(Level.INFO, "----------------------------------");
 
-		// 	// SelectOperator selectOperator = new SelectOperator(tables, whereExpression);
-		// 	// selectOperator.dump();
+			if (fromItem != null && where != null && joins == null ) {
+				Table table = (Table)fromItem;
+				SelectOperator selectOperator = new SelectOperator(
+					databaseDir + "/data/" + table.toString() + ".csv", where, schema.get(table.toString()));
+				selectOperator.dump();
+			}
 
-		// } catch (Exception e) {
-		// 	e.printStackTrace();
-		// }
-	}
 
-	public static Map<String, List<String>> loadSchema(String schemaFile) throws IOException{
-		Map<String, List<String>> schema = new TreeMap<String, List<String>>();
-		BufferedReader reader = new BufferedReader(new FileReader(schemaFile));
-		String tuple;
-		while ((tuple = reader.readLine()) != null) {
-			List<String> parts = Arrays.asList(tuple.split(" "));
-			schema.put(parts.get(0), parts.subList(0, parts.size()));
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		reader.close();
-		return schema;
 	}
 
-	public static Table parsingForScan(String queryFile) throws FileNotFoundException, JSQLParserException {
-		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
-		if (statement != null) {
-			PlainSelect plainSelect = (PlainSelect) statement;
-			return (Table) plainSelect.getFromItem();
-		}
-		return null;
-	}
-
-	public static List<Join> parsingTables(String queryFile) throws FileNotFoundException, JSQLParserException {
-		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
-		if (statement != null) {
-			// TablesNamesFinder tablesNamesFinder = new TablesNamesFinder();
-			// return tablesNamesFinder.getTables(statement);
-			PlainSelect plainSelect = (PlainSelect) statement;
-			FromItem from = plainSelect.getFromItem();
-			List<Join> joins = plainSelect.getJoins();
-			return joins;
-
-		}
-		return null;
-	}
-
-	public static Expression parsingWhere(String queryFile) throws FileNotFoundException, JSQLParserException {
-		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
-		if (statement != null) {
-			PlainSelect plainSelect = (PlainSelect) statement;
-			return plainSelect.getWhere();
-		}
-		return null;
-	}
-
-	/**
-	 * Example method for getting started with JSQLParser. Reads SQL statement from
-	 * a file and prints it to screen; then extracts SelectBody from the query and
-	 * prints it to screen.
-	 */
-
+	//  Parsing example
 	public static void parsingExample(String filename) {
 		try {
 			Statement statement = CCJSqlParserUtil.parse(new FileReader(filename));
