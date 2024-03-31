@@ -14,11 +14,11 @@ public class ScanOperator extends Operator{
     
     @Override
     public String getNextTuple() throws IOException{
-        String line = reader.readLine();
-        if (line == null) {
+        String tuple = reader.readLine();
+        if (tuple == null) {
             return null;
         }
-        return line;
+        return tuple;
     }
 
     @Override

@@ -1,34 +1,38 @@
-// package ed.inf.adbs.lightdb;
+package ed.inf.adbs.lightdb;
 
-// import java.io.IOException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-// import net.sf.jsqlparser.expression.Expression;
-// import net.sf.jsqlparser.statement.select.PlainSelect;
-// import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
+import net.sf.jsqlparser.expression.Expression;
 
-// public class SelectOperator extends ScanOperator{
-//     public SelectOperator(String inputFile) throws IOException {
-//         super(inputFile);
-//     }
+public class SelectOperator extends ScanOperator{
+    public Map<String, List<String>> schema;
+    public Expression whereExpression;
+    public List<String> tables;
 
-//     public String getNextTuple(Expression where) throws IOException {
-//         String line = super.getNextTuple();
-//         ExpressionDeParser deparser = new ExpressionDeParser(where) {
-//             @Override
-//             public void visit(EqualsTo equalsTo) {
-//                 if (equalsTo.getLeftExpression().toString().equals("A")) {
-//                     equalsTo.setLeftExpression("B");
-//                 }
-//             }
-//         }
-//         where.accept(deParser);
-//         return line;
-//     }
+    public SelectOperator(String inputFile, List<String> tables, Expression whereExpression) throws IOException {
+        super(inputFile);
+        this.tables = tables;
+        this.whereExpression = whereExpression;
+    }
 
-//     public void reset() throws IOException {
-//         super.reset();
-//     }
-// }
+    @Override
+    public String getNextTuple() throws IOException {
+        String tuple = super.getNextTuple();
+        if (tuple == null) {
+            return null;
+        }
+        EvaluateCondition deparser = new EvaluateCondition(tables, whereExpression, tuple) {};
+        deparser.setBuffer(new StringBuilder());
+        whereExpression.accept(deparser);
+        if (deparser.value) {
+            return tuple;
+        }
+        return null;
+    }
 
+}
 
 

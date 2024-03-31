@@ -8,4 +8,8 @@ public class DatabaseCatalog {
     public static DatabaseCatalog getInstance() {
         return databaseCatalog;
     }
+
+    public String getTablePath(String tableName) {
+        return "samples/db/data/" + tableName + ".csv";
+    }
 }
