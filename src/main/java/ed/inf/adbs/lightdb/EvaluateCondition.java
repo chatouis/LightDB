@@ -41,11 +41,11 @@ public class EvaluateCondition extends ExpressionDeParser{
         this.whereExpression = whereExpression;
         this.tuple = tuple;
         String[] tupleItem = tuple.split(",");
-        this.tupleItem = Arrays.asList(tupleItem);
         // strip 
         for (int i = 0; i < tupleItem.length; i++) {
             tupleItem[i] = tupleItem[i].trim();
         }
+        this.tupleItem = Arrays.asList(tupleItem);
     }
 
     private void setValue(boolean value) {

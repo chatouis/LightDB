@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.*;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
@@ -17,10 +18,12 @@ import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 
 public class Utils {
     private static Utils utils = new Utils();
+	public static Logger logger = Logger.getLogger(LightDB.class.getName());
 
     private Utils() {}
 
@@ -32,7 +35,7 @@ public class Utils {
         return "samples/db/data/" + tableName + ".csv";
     }
 
-    	public static Map<String, List<String>> loadSchema(String schemaFile) throws IOException{
+	public static Map<String, List<String>> loadSchema(String schemaFile) throws IOException{
 		Map<String, List<String>> schema = new TreeMap<String, List<String>>();
 		BufferedReader reader = new BufferedReader(new FileReader(schemaFile));
 		String tuple;
@@ -82,4 +85,12 @@ public class Utils {
 		return null;
 	}
 
+	public static List<SelectItem<?>> parsingSelectItems(String queryFile) throws FileNotFoundException, JSQLParserException {
+		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
+		if (statement != null) {
+			PlainSelect plainSelect = (PlainSelect) statement;
+			return plainSelect.getSelectItems();
+		}
+		return null;
+	}
 }
