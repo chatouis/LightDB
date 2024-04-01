@@ -24,10 +24,10 @@ public class QueryPlan {
 			Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
 
 			FromItem fromItem = Utils.parsingFromItem(inputSQL);
-			List<Join> joins = Utils.parsingJoins(inputSQL);
 			// Set<String> tables = Utils.parsingTablesSet(inputSQL);
 			Expression where = Utils.parsingWhere(inputSQL);
 			List<SelectItem<?>> selectItems = Utils.parsingSelectItems(inputSQL);
+			List<Join> joins = Utils.parsingJoins(inputSQL);
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 			
@@ -38,7 +38,7 @@ public class QueryPlan {
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
-			if (fromItem != null && where != null && joins == null ) {
+			if (fromItem != null && where != null && joins == null && selectItems == null) {
 				Table table = (Table)fromItem;
 				SelectOperator selectOperator = new SelectOperator(
 					databaseDir + "/data/" + table.toString() + ".csv", where, schema.get(table.toString()));
@@ -59,6 +59,15 @@ public class QueryPlan {
 				ProjectSelectOperator projectSelectOperator = new ProjectSelectOperator(
 					databaseDir + "/data/" + table.toString() + ".csv", where, schema.get(table.toString()), selectItems);
 				projectSelectOperator.dump();
+			}
+
+			Utils.logger.log(Level.INFO, "----------------------------------");
+
+			if (fromItem != null && joins != null && where != null && selectItems == null) {
+				Table table = (Table)fromItem;
+				JoinOperator joinOperator = new JoinOperator(
+					databaseDir + "/data/" + table.toString() + ".csv", where, schema.get(table.toString()), joins);
+				joinOperator.dump();
 			}
 
 

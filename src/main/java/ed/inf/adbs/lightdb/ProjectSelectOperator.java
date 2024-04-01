@@ -32,7 +32,7 @@ public class ProjectSelectOperator extends SelectOperator {
         String newTuple = "";
         for (SelectItem<?> selectItem : selectItems) {
             if (newTuple.length() > 0) {
-                newTuple += ",";
+                newTuple += ", ";
             }
             String columnNameWithTable = selectItem.toString();
             String columnName = columnNameWithTable.split("\\.")[1];

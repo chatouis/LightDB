@@ -2,8 +2,6 @@ package ed.inf.adbs.lightdb;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import net.sf.jsqlparser.expression.Expression;
 
@@ -24,16 +22,20 @@ public class SelectOperator extends ScanOperator{
         if (tuple == null) {
             return null;
         }
-
+        
         EvaluateCondition deparser = new EvaluateCondition(schema, whereExpression, tuple) {};
         deparser.setBuffer(new StringBuilder());
         whereExpression.accept(deparser);
-        if (deparser.value) {
-            return tuple;
+        while (deparser.value == false) {
+            tuple = super.getNextTuple();
+            if (tuple == null) {
+                return null;
+            }
+            deparser = new EvaluateCondition(schema, whereExpression, tuple) {};
+            deparser.setBuffer(new StringBuilder());
+            whereExpression.accept(deparser);
         }
-        else {
-            return getNextTuple();
-        }
+        return tuple;
     }
 
 }

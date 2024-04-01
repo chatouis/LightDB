@@ -1,1 +1,1 @@
-SELECT * FROM Sailors WHERE Sailors.B <= 100;
+SELECT Boats.E, Boats.F FROM Boats WHERE Boats.E = 2;

@@ -101,4 +101,21 @@ public class LightDBTest {
 		assertEquals(null, selectOperator.getNextTuple());
 	}
 
+
+	@Test
+	public void TestProjectSelectOperator() throws Exception {
+		String query = "SELECT Boats.E, Boats.F FROM Boats WHERE Boats.E = 2";
+		Statement statement = CCJSqlParserUtil.parse(query);
+		PlainSelect plainSelect = (PlainSelect) statement;
+
+		String databaseDir = "samples/db";
+		Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
+
+		ProjectSelectOperator projectSelectOperator = new ProjectSelectOperator(
+			"samples/db/data/Boats.csv", plainSelect.getWhere(), schema.get("Boats"), plainSelect.getSelectItems());
+		assertEquals("2, 3", projectSelectOperator.getNextTuple());
+		assertEquals("2, 8", projectSelectOperator.getNextTuple());
+		assertEquals(null, projectSelectOperator.getNextTuple());
+	}
+
 }
