@@ -2,6 +2,7 @@ package ed.inf.adbs.lightdb;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
@@ -15,33 +16,22 @@ import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 
+public class EvaluateConditionJoin extends ExpressionDeParser {
+    Map<String, List<String>> schema;
+    String leftTuple;
+    String rightTuple;
+    boolean value = true;
+    List<String> leftTupleItem;
+    List<String> rightTupleItem;
 
-public class EvaluateCondition extends ExpressionDeParser{
-    public List<String> schema;
-    public String tuple;
-    public boolean value = true;
-    public List<String> tables;
-    public Expression whereExpression;
-    public List<String> tupleItem;
-
-    // constructor for test
-    public EvaluateCondition(Expression expression) {
-        this.whereExpression = expression;
-    }
-
-    // constructor for SelectOperator
-    public EvaluateCondition(List<String> schema, Expression whereExpression, String tuple) {
+    public EvaluateConditionJoin(Map<String, List<String>> schema, Expression whereExpression, String leftTuple, String rightTuple) {
         this.schema = schema;
-        this.whereExpression = whereExpression;
-        this.tuple = tuple;
-        String[] tupleItem = tuple.split(",");
-        // strip 
-        for (int i = 0; i < tupleItem.length; i++) {
-            tupleItem[i] = tupleItem[i].trim();
-        }
-        this.tupleItem = Arrays.asList(tupleItem);
+        this.leftTuple = leftTuple;
+        this.rightTuple = rightTuple;
+        this.leftTupleItem = tupleToTupleItem(leftTuple);
+        this.rightTupleItem = tupleToTupleItem(rightTuple);
     }
-
+    
     private void setValue(boolean value) {
         this.value = value;
     }
@@ -50,11 +40,44 @@ public class EvaluateCondition extends ExpressionDeParser{
         return this.value;
     }
 
-    public LongValue childExpressionToLongValue(Expression expression) {
+    public List<String> tupleToTupleItem(String tuple) {
+        String[] tupleItem = tuple.split(",");
+        // strip 
+        for (int i = 0; i < tupleItem.length; i++) {
+            tupleItem[i] = tupleItem[i].trim();
+        }
+        return Arrays.asList(tupleItem);
+    }
+
+    public String findTableOfColumn(String columnName) {
+        for (String tableName : schema.keySet()) {
+            if (schema.get(tableName).contains(columnName)) {
+                return tableName;
+            }
+        }
+        return null;
+    }
+
+    public LongValue leftExpressionToLongValue(Expression expression) {
         if (expression instanceof Column) {
             Column column = (Column) expression;
             String columnName = column.getColumnName();
-            String value = tupleItem.get(schema.indexOf(columnName));
+            String tableName = column.getTable().getName();
+            String value = leftTupleItem.get(schema.get(tableName).indexOf(columnName));
+            return new LongValue(value);
+        }
+        else if (expression instanceof LongValue) {
+            return (LongValue) expression;
+        }
+        return null;
+    }
+
+    public LongValue rightExpressionToLongValue(Expression expression) {
+        if (expression instanceof Column) {
+            Column column = (Column) expression;
+            String columnName = column.getColumnName();
+            String tableName = column.getTable().getName();
+            String value = rightTupleItem.get(schema.get(tableName).indexOf(columnName));
             return new LongValue(value);
         }
         else if (expression instanceof LongValue) {
@@ -66,40 +89,41 @@ public class EvaluateCondition extends ExpressionDeParser{
     @Override
     public void visit (MinorThan minorThan){
         super.visit(minorThan);
-        LongValue leftValue = childExpressionToLongValue(minorThan.getLeftExpression());
-        LongValue rightValue = childExpressionToLongValue(minorThan.getRightExpression());
+        LongValue leftValue = leftExpressionToLongValue(minorThan.getLeftExpression());
+        LongValue rightValue = rightExpressionToLongValue(minorThan.getRightExpression());
         setValue(leftValue.getValue() < rightValue.getValue());
     }
 
     @Override
     public void visit (MinorThanEquals minorThanEquals){
         super.visit(minorThanEquals);
-        LongValue leftValue = childExpressionToLongValue(minorThanEquals.getLeftExpression());
-        LongValue rightValue = childExpressionToLongValue(minorThanEquals.getRightExpression());
+        LongValue leftValue = leftExpressionToLongValue(minorThanEquals.getLeftExpression());
+        LongValue rightValue = rightExpressionToLongValue(minorThanEquals.getRightExpression());
         setValue(leftValue.getValue() <= rightValue.getValue());
     }
+
 
     @Override
     public void visit (EqualsTo equalsTo){
         super.visit(equalsTo);
-        LongValue leftValue = childExpressionToLongValue(equalsTo.getLeftExpression());
-        LongValue rightValue = childExpressionToLongValue(equalsTo.getRightExpression());
+        LongValue leftValue = leftExpressionToLongValue(equalsTo.getLeftExpression());
+        LongValue rightValue = rightExpressionToLongValue(equalsTo.getRightExpression());
         setValue(leftValue.getValue() == rightValue.getValue());
     }
 
     @Override
     public void visit (GreaterThan greaterThan){
         super.visit(greaterThan);
-        LongValue leftValue = childExpressionToLongValue(greaterThan.getLeftExpression());
-        LongValue rightValue = childExpressionToLongValue(greaterThan.getRightExpression());
+        LongValue leftValue = leftExpressionToLongValue(greaterThan.getLeftExpression());
+        LongValue rightValue = rightExpressionToLongValue(greaterThan.getRightExpression());
         setValue(leftValue.getValue() > rightValue.getValue());
     }
 
     @Override
     public void visit (GreaterThanEquals greaterThanEquals){
         super.visit(greaterThanEquals);
-        LongValue leftValue = childExpressionToLongValue(greaterThanEquals.getLeftExpression());
-        LongValue rightValue = childExpressionToLongValue(greaterThanEquals.getRightExpression());
+        LongValue leftValue = leftExpressionToLongValue(greaterThanEquals.getLeftExpression());
+        LongValue rightValue = rightExpressionToLongValue(greaterThanEquals.getRightExpression());
         setValue(leftValue.getValue() >= rightValue.getValue());
     }
     
@@ -123,6 +147,5 @@ public class EvaluateCondition extends ExpressionDeParser{
         setValue(leftValue || rightValue);
     }
 
-
+    
 }
-

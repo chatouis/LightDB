@@ -13,6 +13,7 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -82,7 +83,6 @@ public class LightDBTest {
 			binaryExpression.accept(deparser);
 			assertEquals(entry.getValue(), deparser.value);
 		}
-
 	}
 
 	@Test
@@ -118,4 +118,65 @@ public class LightDBTest {
 		assertEquals(null, projectSelectOperator.getNextTuple());
 	}
 
+	@Test
+	public void TestEvaluateConditionJoin() throws Exception {
+		Map<String, List<String>> schema = new TreeMap<>();
+		schema.put("table1", Arrays.asList("A", "B", "C"));
+		schema.put("table2", Arrays.asList("G", "H", "I"));
+
+		String query = "SELECT * FROM table1, table2 WHERE table1.A = table2.G AND table1.B = 4";
+		PlainSelect plainSelect = (PlainSelect) CCJSqlParserUtil.parse(query);
+		BinaryExpression binaryExpression = (BinaryExpression) plainSelect.getWhere();
+
+		Map<List<String>, Boolean> testData = new HashMap<>();
+		List<String> tuplePair1 = Arrays.asList("1,2,3", "1,2,3");
+		List<String> tuplePair2 = Arrays.asList("3,3,4", "2,3,4");
+		List<String> tuplePair3 = Arrays.asList("2,4,5", "2,4,5");
+		testData.put(tuplePair1, false);
+		testData.put(tuplePair2, false);
+		testData.put(tuplePair3, true);
+
+		for (Map.Entry<List<String>, Boolean> entry : testData.entrySet()) {
+			EvaluateConditionJoin deparser = new EvaluateConditionJoin(schema, binaryExpression, entry.getKey().get(0), entry.getKey().get(1));
+			deparser.setBuffer(new StringBuilder());
+			binaryExpression.accept(deparser);
+			assertEquals(entry.getValue(), deparser.value);
+		}
+	}
+
+	@Test
+	public void TestJoinOperator1() throws Exception {
+		String query = "SELECT * FROM Sailors, Reserves WHERE Sailors.A = Reserves.G AND Sailors.B = 100";
+
+		Statement statement = CCJSqlParserUtil.parse(query);
+		PlainSelect plainSelect = (PlainSelect) statement;
+
+		String databaseDir = "samples/db";
+		Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
+
+		JoinOperator joinOperator = new JoinOperator(
+			"samples/db/data/Sailors.csv", "samples/db/data/Reserves.csv", plainSelect.getWhere(), schema);
+		assertEquals("3, 100, 105, 3, 102", joinOperator.getNextTuple());
+		assertEquals("4, 100, 50, 4, 104", joinOperator.getNextTuple());
+		assertEquals(null, joinOperator.getNextTuple());
+	}
+
+	@Test
+	public void TestJoinOperator2() throws Exception {
+		String query = "SELECT * FROM Sailors, Reserves WHERE Sailors.A = Reserves.G AND Sailors.B = 200";
+
+		Statement statement = CCJSqlParserUtil.parse(query);
+		PlainSelect plainSelect = (PlainSelect) statement;
+
+		String databaseDir = "samples/db";
+		Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
+
+		JoinOperator joinOperator = new JoinOperator(
+			"samples/db/data/Sailors.csv", "samples/db/data/Reserves.csv", plainSelect.getWhere(), schema);
+		assertEquals("1, 200, 50, 1, 101", joinOperator.getNextTuple());
+		assertEquals("1, 200, 50, 1, 102", joinOperator.getNextTuple());
+		assertEquals("1, 200, 50, 1, 103", joinOperator.getNextTuple());
+		assertEquals("2, 200, 200, 2, 101", joinOperator.getNextTuple());
+		assertEquals(null, joinOperator.getNextTuple());
+	}
 }
