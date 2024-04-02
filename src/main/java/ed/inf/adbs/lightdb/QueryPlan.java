@@ -6,10 +6,8 @@ import java.util.logging.Level;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
-import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class QueryPlan {
@@ -29,6 +27,11 @@ public class QueryPlan {
 			}
         }
 		return false;
+	}
+
+	public void joinQueryPlan() {
+		// JoinMultiOperator joinMultiOperator = new JoinMultiOperator(databaseDir, where, (Table)fromItem, joins, schema);
+		// joinMultiOperator.dump();
 	}
 
     public void execute() {
@@ -59,7 +62,7 @@ public class QueryPlan {
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
-			if (fromItem != null && hasProjection(selectItems) == true && joins == null && where == null ) {
+			if (fromItem != null && hasProjection(selectItems) == true  && where == null && joins == null ) {
 				Table table = (Table)fromItem;
 				ProjectOperator projectOperator = new ProjectOperator(
 					databaseDir + "/data/" + table.toString() + ".csv", schema.get(table.toString()), selectItems);
@@ -75,11 +78,16 @@ public class QueryPlan {
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
-			if (fromItem != null && joins != null && where != null) {
+			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() == 1) {
 				Table table = (Table)fromItem;
 				JoinOperator joinOperator = new JoinOperator(
 					databaseDir + "/data/" + table.toString() + ".csv", databaseDir + "/data/" + joins.get(0).toString() + ".csv", where, schema);
 				joinOperator.dump();
+			}
+
+			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() > 1) {
+				JoinTupleListOperator joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema);
+				joinTupleListOperator.dump();
 			}
 
 

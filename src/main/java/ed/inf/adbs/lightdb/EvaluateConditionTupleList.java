@@ -1,5 +1,6 @@
 package ed.inf.adbs.lightdb;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -17,30 +18,37 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.util.deparser.ExpressionDeParser;
 
 
-public class EvaluateCondition extends ExpressionDeParser{
-    public List<String> schema;
-    public String tuple;
+public class EvaluateConditionTupleList extends ExpressionDeParser{
+    public List<String> tupleList;
     public boolean value = true;
-    public List<String> tables;
     public Expression whereExpression;
-    public List<String> tupleItem;
+    public List<List<String>> tupleItemList;
+    public List<List<String>> schemaList;
 
     // constructor for test
-    public EvaluateCondition(Expression expression) {
+    public EvaluateConditionTupleList(Expression expression) {
         this.whereExpression = expression;
     }
 
     // constructor for SelectOperator
-    public EvaluateCondition(List<String> schema, Expression whereExpression, String tuple) {
-        this.schema = schema;
+    public EvaluateConditionTupleList(List<List<String>> schemaList, Expression whereExpression, List<String> tupleList) {
+        this.schemaList = schemaList;
         this.whereExpression = whereExpression;
-        this.tuple = tuple;
+        this.tupleList = tupleList;
+        this.tupleItemList = new ArrayList<List<String>>();
+        for (String tuple : tupleList) {
+            this.tupleItemList.add(tupleToTupleItem(tuple));
+        }
+
+    }
+
+    public List<String> tupleToTupleItem(String tuple) {
         String[] tupleItem = tuple.split(",");
         // strip 
         for (int i = 0; i < tupleItem.length; i++) {
             tupleItem[i] = tupleItem[i].trim();
         }
-        this.tupleItem = Arrays.asList(tupleItem);
+        return Arrays.asList(tupleItem);
     }
 
     private void setValue(boolean value) {
@@ -55,8 +63,14 @@ public class EvaluateCondition extends ExpressionDeParser{
         if (expression instanceof Column) {
             Column column = (Column) expression;
             String columnName = column.getColumnName();
-            String value = tupleItem.get(schema.indexOf(columnName));
-            return new LongValue(value);
+            for (List<String> schema : schemaList) {
+                if (schema.contains(columnName)) {
+                    int indexOfTable= schemaList.indexOf(schema);
+                    int indexOfColoumn = schema.indexOf(columnName);
+                    String value = tupleItemList.get(indexOfTable).get(indexOfColoumn);
+                    return new LongValue(value);
+                }
+            }
         }
         else if (expression instanceof LongValue) {
             return (LongValue) expression;

@@ -6,11 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.statement.select.Join;
 
 public class JoinOperator extends Operator{
     Expression whereExpression;
-    List<Join> joins;
     List<String> schema;
     ScanOperator leftScanOperator, rightScanOperator;
     String leftTuple = null;
@@ -65,7 +63,7 @@ public class JoinOperator extends Operator{
 
     
         return leftTuple + ", " + rightTuple;
-    }
+    }    
 
     @Override
     public void reset() throws IOException {
