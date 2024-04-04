@@ -1,14 +1,20 @@
 package ed.inf.adbs.lightdb;
 
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 
 public class JoinTupleListOperator extends Operator{
     String[] tableNameList;
@@ -21,6 +27,7 @@ public class JoinTupleListOperator extends Operator{
     Boolean[] fullScaned;
     int tableNum;
     List<List<String>> tupleItemList;
+    Map<String, List<BinaryExpression>> tableToWhereExpression;
 
     public JoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins, Map<String, List<String>> schema) throws Exception {
         tableNum = joins.size() + 1;
@@ -50,6 +57,31 @@ public class JoinTupleListOperator extends Operator{
         }
     }
 
+    public JoinTupleListOperator(String databaseDir, Expression whereExpression, List<String> tableNameList, Map<String, List<String>> schema, Map<String, List<BinaryExpression>> tableToWhereExpression) throws IOException {
+        tableNum = tableNameList.size();
+        this.tableNameList = new String[tableNum];
+        inputFileList = new String[tableNum];
+        scanOperatorList = new ScanOperator[tableNum];
+        this.schema = new ArrayList<List<String>>();
+        this.whereExpression = whereExpression;
+        fullScaned = new Boolean[tableNum];
+
+        for (int i = 0; i < tableNum; i++) {
+            this.tableNameList[i] = tableNameList.get(i);
+            inputFileList[i] = databaseDir + "/data/" + this.tableNameList[i] + ".csv";
+            scanOperatorList[i] = new ScanOperator(inputFileList[i]);
+            this.schema.add(schema.get(this.tableNameList[i]));
+            fullScaned[i] = false;
+        }
+
+        tupleItemList = new ArrayList<List<String>>();
+        String[] tuples = new String[tableNum];
+        this.tableToWhereExpression = tableToWhereExpression;
+        while (fullScaned() == false) {
+            getNextTupleRecursive(tuples, 0);
+        }
+    }
+
     public Boolean fullScaned() {
         for (Boolean scaned : fullScaned) {
             if (!scaned) {
@@ -59,8 +91,30 @@ public class JoinTupleListOperator extends Operator{
         return true;
     }
     
+    public BinaryExpression combineExpression(List<BinaryExpression> expressions) {
+        BinaryExpression expression = expressions.get(0);
+        for (int i = 0; i < expressions.size()-1; i++) {
+            expressions.get(i).setRightExpression(expressions.get(i+1));
+        }
+        return expression;
+    }
+
+
     // dfs on tables
-    private void getNextTupleRecursive(String[] tuples, int level) throws IOException {
+    public void getNextTupleRecursive(String[] tuples, int level) throws IOException {
+        if (tableToWhereExpression != null && level > 0) {
+            List<String> tuple = Arrays.asList(tuples);
+            List<String> filteredTuple = tuple.stream()
+                                            .filter(s -> s != null)
+                                            .collect(Collectors.toList());
+            EvaluateConditionTupleList deparser = new EvaluateConditionTupleList(schema, whereExpression, filteredTuple) {};
+            deparser.setBuffer(new StringBuilder());
+            whereExpression.accept(deparser);
+            if (deparser.value == false) {
+                return;
+            }
+        }
+
         if (level == tableNum) {
             List<String> tupleItem = new ArrayList<String>();
             for (String tuple : tuples) {
