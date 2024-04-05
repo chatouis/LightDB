@@ -55,8 +55,15 @@ public class EvaluateCondition extends ExpressionDeParser{
         if (expression instanceof Column) {
             Column column = (Column) expression;
             String columnName = column.getColumnName();
-            String value = tupleItem.get(schema.indexOf(columnName));
-            return new LongValue(value);
+            if (schema.contains(columnName) == false) {
+                columnName = column.getTable().toString() + "." + columnName;
+                String value = tupleItem.get(schema.indexOf(columnName));
+                return new LongValue(value);
+            }
+            else {
+                String value = tupleItem.get(schema.indexOf(columnName));
+                return new LongValue(value);
+            }
         }
         else if (expression instanceof LongValue) {
             return (LongValue) expression;

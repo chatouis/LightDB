@@ -64,9 +64,18 @@ public class EvaluateConditionTupleList extends ExpressionDeParser{
             Column column = (Column) expression;
             String columnName = column.getColumnName();
             for (List<String> schema : schemaList) {
-                if (schema.contains(columnName)) {
+                // todo : support using alias and tableName at the same time
+                if (schema.contains(columnName) == true) {
+                    //  search for correct table
                     int indexOfTable= schemaList.indexOf(schema);
                     int indexOfColoumn = schema.indexOf(columnName);
+                    String value = tupleItemList.get(indexOfTable).get(indexOfColoumn);
+                    return new LongValue(value);
+                }
+                else if (schema.contains(column.getTable().toString() + "." + columnName) == true) {
+                    // consider alias
+                    int indexOfTable= schemaList.indexOf(schema);
+                    int indexOfColoumn = schema.indexOf(column.getTable().toString() + "." + columnName);
                     String value = tupleItemList.get(indexOfTable).get(indexOfColoumn);
                     return new LongValue(value);
                 }

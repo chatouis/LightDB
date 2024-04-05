@@ -47,60 +47,89 @@ public class QueryPlan {
 			Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
 
 			FromItem fromItem = Utils.parsingFromItem(inputSQL);
-			// Set<String> tables = Utils.parsingTablesSet(inputSQL);
+			List<Join> joins = Utils.parsingJoins(inputSQL);
 			Expression where = Utils.parsingWhere(inputSQL);
 			List<SelectItem<?>> selectItems = Utils.parsingSelectItems(inputSQL);
-			List<Join> joins = Utils.parsingJoins(inputSQL);
+			List<String> aliases = Utils.parsingAliases(inputSQL);
 
+			String tableName = fromItem.toString();
+			if (aliases != null) {
+				tableName = tableName.split(" ")[0];
+			}
+			
 			Utils.logger.log(Level.INFO, "----------------------------------");
 			
 			if (fromItem != null && where == null && joins == null && hasProjection(selectItems) == false) {
-				ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + (Table)fromItem + ".csv");
+				ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + tableName + ".csv");
 				scanOperator.dump();
 			}
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && where != null && joins == null && hasProjection(selectItems) == false){
-				Table table = (Table)fromItem;
 				SelectOperator selectOperator = new SelectOperator(
-					databaseDir + "/data/" + table.toString() + ".csv", where, schema.get(table.toString()));
+					databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName));
 				selectOperator.dump();
 			}
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && hasProjection(selectItems) == true  && where == null && joins == null ) {
-				Table table = (Table)fromItem;
 				ProjectOperator projectOperator = new ProjectOperator(
-					databaseDir + "/data/" + table.toString() + ".csv", schema.get(table.toString()), selectItems);
+					databaseDir + "/data/" + tableName + ".csv", schema.get(tableName), selectItems);
 				projectOperator.dump();
 			}
 
 			if (fromItem != null && hasProjection(selectItems) == true && where != null && joins == null ) {
-				Table table = (Table)fromItem;
 				ProjectSelectOperator projectSelectOperator = new ProjectSelectOperator(
-					databaseDir + "/data/" + table.toString() + ".csv", where, schema.get(table.toString()), selectItems);
+					databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), selectItems);
 				projectSelectOperator.dump();
 			}
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() == 1) {
-				Table table = (Table)fromItem;
-				JoinOperator joinOperator = new JoinOperator(
-					databaseDir + "/data/" + table.toString() + ".csv", databaseDir + "/data/" + joins.get(0).toString() + ".csv", where, schema);
+				String joinName = joins.get(0).toString().split(" ")[0];
+				JoinOperator joinOperator;
+				if (aliases == null) {
+					joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema);
+				}
+				else {
+					String tableAlias = fromItem.toString().split(" ")[1];
+					String joinAlias = joins.get(0).toString().split(" ")[1];
+					joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias);
+				}
 				joinOperator.dump();
 			}
 
 			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() > 1) {
-				// Expression where = sortExpression(inputSQL);
-				collectBinaryExpressions((BinaryExpression) where);
-				tableHashWhereExpression();
-				sortTable((Table)fromItem, joins);
+				// for avoiding cross products
+				// -----------------
+				// collectBinaryExpressions((BinaryExpression) where);
+				// tableHashWhereExpression();
+				// sortTable((Table)fromItem, joins);
 				// JoinTupleListOperator joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, tableNameList, schema, tableToWhereExpression);
-				JoinTupleListOperator joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema);
+				// -----------------
+
+				JoinTupleListOperator joinTupleListOperator;
+				if (aliases == null) {
+					joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema);
+				}
+				else {
+					joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, aliases);
+				}
 				joinTupleListOperator.dump();
+			}
+
+			if (fromItem != null && hasProjection(selectItems) == true && joins != null && where != null && joins.size() > 1) {
+				ProjectJoinTupleListOperator projectJoinTupleListOperator;
+				if (aliases == null) {
+					projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems);
+				}
+				else {
+					projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, aliases);
+				}
+				projectJoinTupleListOperator.dump();
 			}
 
 

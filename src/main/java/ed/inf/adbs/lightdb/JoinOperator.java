@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.statement.select.Join;
 
 public class JoinOperator extends Operator{
     Expression whereExpression;
@@ -24,6 +26,20 @@ public class JoinOperator extends Operator{
         this.schema.addAll(schema.get(leftTableName));
         this.schema.addAll(schema.get(rightTableName));
     }
+
+
+    public JoinOperator(String leftInputFile, String rightIputFile, Expression whereExpression, 
+            Map<String, List<String>> schema, String tableAlias, String joinAlias) throws Exception {
+        leftScanOperator = new ScanOperator(leftInputFile);
+        rightScanOperator = new ScanOperator(rightIputFile);
+        this.whereExpression = whereExpression;
+        String leftTableName = pathToTableName(leftInputFile);
+        String rightTableName = pathToTableName(rightIputFile);
+        this.schema = new ArrayList<String>();
+        this.schema.addAll(schema.get(leftTableName).stream().map(columnName -> tableAlias + "." + columnName).collect(Collectors.toList()));
+        this.schema.addAll(schema.get(rightTableName).stream().map(columnName -> joinAlias + "." + columnName).collect(Collectors.toList()));
+    }
+
 
     public String pathToTableName(String path) {
         return path.split("/")[path.split("/").length - 1].split(".csv")[0];

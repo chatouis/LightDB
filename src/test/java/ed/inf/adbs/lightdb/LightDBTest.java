@@ -9,9 +9,10 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -101,7 +102,6 @@ public class LightDBTest {
 		assertEquals("107, 2, 8", selectOperator.getNextTuple());
 		assertEquals(null, selectOperator.getNextTuple());
 	}
-
 
 	@Test
 	public void TestProjectSelectOperator() throws Exception {
@@ -228,5 +228,51 @@ public class LightDBTest {
 		assertEquals("1, 200, 50, 1, 103, 103, 1, 1", joinTupleListOperator.getNextTuple());
 		assertEquals("2, 200, 200, 2, 101, 101, 2, 3", joinTupleListOperator.getNextTuple());
 
+	}
+
+	@Test
+	public void TestProjectJoinTupleListOperator() throws Exception {
+		String query = "SELECT Sailors.A FROM Sailors, Reserves, Boats WHERE Sailors.A = Reserves.G AND Sailors.B = 200 AND Reserves.H = Boats.D;";
+
+		Statement statement = CCJSqlParserUtil.parse(query);
+		PlainSelect plainSelect = (PlainSelect) statement;
+
+		String databaseDir = "samples/db";
+		Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
+
+		ProjectJoinTupleListOperator projectJoinTupleListOperator = new ProjectJoinTupleListOperator(
+			databaseDir, plainSelect.getWhere(), new Table("Sailors"), plainSelect.getJoins(), schema, plainSelect.getSelectItems());
+		assertEquals("1", projectJoinTupleListOperator.getNextTuple());
+		assertEquals("1", projectJoinTupleListOperator.getNextTuple());
+		assertEquals("1", projectJoinTupleListOperator.getNextTuple());
+		assertEquals("2", projectJoinTupleListOperator.getNextTuple());
+
+	}
+
+	@Test
+	public void TestAliases() throws Exception {
+		String query = "SELECT * FROM Sailors S1, Sailors S2 WHERE S1.A < S2.A;";
+		Statement statement = CCJSqlParserUtil.parse(query);
+		PlainSelect plainSelect = (PlainSelect) statement;
+
+		String databaseDir = "samples/db";
+		Map<String, List<String>> schema = Utils.loadSchema(databaseDir + "/schema.txt");
+		
+		FromItem fromItem = plainSelect.getFromItem();
+		List<Join> joins = plainSelect.getJoins();
+		Expression where = plainSelect.getWhere();
+
+		String tableName = fromItem.toString().split(" ")[0];
+		String tableAlias = fromItem.toString().split(" ")[1];
+		String joinName = joins.get(0).toString().split(" ")[0];
+		String joinAlias = joins.get(0).toString().split(" ")[1];
+
+		JoinOperator joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias);
+		assertEquals("1, 200, 50, 2, 200, 200", joinOperator.getNextTuple());
+		assertEquals("1, 200, 50, 3, 100, 105", joinOperator.getNextTuple());
+		assertEquals("1, 200, 50, 4, 100, 50", joinOperator.getNextTuple());
+		assertEquals("1, 200, 50, 5, 100, 500", joinOperator.getNextTuple());
+		assertEquals("1, 200, 50, 6, 300, 400", joinOperator.getNextTuple());
+		assertEquals(null, joinOperator.getNextTuple());
 	}
 }

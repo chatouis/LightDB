@@ -1,6 +1,5 @@
 package ed.inf.adbs.lightdb;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,11 +9,8 @@ import java.util.stream.Collectors;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Join;
-import net.sf.jsqlparser.statement.select.PlainSelect;
 
 public class JoinTupleListOperator extends Operator{
     String[] tableNameList;
@@ -29,7 +25,8 @@ public class JoinTupleListOperator extends Operator{
     List<List<String>> tupleItemList;
     Map<String, List<BinaryExpression>> tableToWhereExpression;
 
-    public JoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins, Map<String, List<String>> schema) throws Exception {
+    public JoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins, 
+            Map<String, List<String>> schema) throws Exception {
         tableNum = joins.size() + 1;
         tableNameList = new String[tableNum];
         inputFileList = new String[tableNum];
@@ -58,6 +55,7 @@ public class JoinTupleListOperator extends Operator{
     }
 
     public JoinTupleListOperator(String databaseDir, Expression whereExpression, List<String> tableNameList, Map<String, List<String>> schema, Map<String, List<BinaryExpression>> tableToWhereExpression) throws IOException {
+        // for avoiding cross products
         tableNum = tableNameList.size();
         this.tableNameList = new String[tableNum];
         inputFileList = new String[tableNum];
@@ -82,6 +80,48 @@ public class JoinTupleListOperator extends Operator{
         }
     }
 
+    public JoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins,
+            Map<String, List<String>> schema, List<String> aliases) throws Exception {
+        // for aliases
+        tableNum = joins.size() + 1;
+        tableNameList = new String[tableNum];
+        inputFileList = new String[tableNum];
+        scanOperatorList = new ScanOperator[tableNum];
+        this.schema = new ArrayList<List<String>>();
+        this.whereExpression = whereExpression;
+        fullScaned = new Boolean[tableNum];
+
+        tableNameList[0] = table.toString().split(" ")[0];
+        for (int i = 0; i < joins.size(); i++) {
+            tableNameList[i + 1] = joins.get(i).toString().split(" ")[0];
+        }
+
+        for (int i = 0; i < tableNum; i++) {
+            inputFileList[i] = databaseDir + "/data/" + tableNameList[i] + ".csv";
+            scanOperatorList[i] = new ScanOperator(inputFileList[i]);
+            // this.schema.add(schema.get(tableNameList[i]));
+            String alias = aliases.get(i);
+            if (alias != "") {
+                this.schema.add(
+                    schema.get(tableNameList[i])
+                        .stream()
+                        .map(columnName -> alias + "." + columnName)
+                        .collect(Collectors.toList())   
+                        );
+            }
+            else {
+                this.schema.add(schema.get(tableNameList[i]));
+            }
+            fullScaned[i] = false;
+        }
+
+        tupleItemList = new ArrayList<List<String>>();
+        String[] tuples = new String[tableNum];
+        while (fullScaned() == false) {
+            getNextTupleRecursive(tuples, 0);
+        }
+    }
+
     public Boolean fullScaned() {
         for (Boolean scaned : fullScaned) {
             if (!scaned) {
@@ -99,10 +139,11 @@ public class JoinTupleListOperator extends Operator{
         return expression;
     }
 
-
     // dfs on tables
     public void getNextTupleRecursive(String[] tuples, int level) throws IOException {
         if (tableToWhereExpression != null && level > 0) {
+            // exist error
+            // todo : combine expression
             List<String> tuple = Arrays.asList(tuples);
             List<String> filteredTuple = tuple.stream()
                                             .filter(s -> s != null)
