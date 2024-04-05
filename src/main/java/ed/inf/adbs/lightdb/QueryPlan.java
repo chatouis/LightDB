@@ -12,6 +12,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.select.Distinct;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.SelectItem;
@@ -53,55 +54,57 @@ public class QueryPlan {
 			List<SelectItem<?>> selectItems = Utils.parsingSelectItems(inputSQL);
 			List<String> aliases = Utils.parsingAliases(inputSQL);
 			String orderBy = Utils.parsingOrderBy(inputSQL);
+			Boolean distinct = Utils.parsingDistinct(inputSQL);
+
 
 			String tableName = fromItem.toString();
 			if (aliases != null) {
 				tableName = tableName.split(" ")[0];
 			}
-			
-			Utils.logger.log(Level.INFO, "----------------------------------");
-			
+
 			if (fromItem != null && where == null && joins == null && hasProjection(selectItems) == false) {
 				if (orderBy == null) {
 					ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + tableName + ".csv");
+					scanOperator.setDistinct(distinct);
 					scanOperator.dump();
 				}
 				else {
 					orderBy = orderBy.split("\\.")[1];
 					SortScanOperator sortScanOperator = new SortScanOperator(
 						databaseDir + "/data/" + tableName + ".csv", orderBy, schema.get(tableName));
+					sortScanOperator.setDistinct(distinct);
 					sortScanOperator.dump();
 				}
 			}
-
-			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && where != null && joins == null && hasProjection(selectItems) == false){
 				if (orderBy == null) {
 					SelectOperator selectOperator = new SelectOperator(
 						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName));
+					selectOperator.setDistinct(distinct);
 					selectOperator.dump();
 				}
 				else {
 					orderBy = orderBy.split("\\.")[1];
 					SortSelectOperator sortSelectOperator = new SortSelectOperator(
 						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), orderBy);
-						sortSelectOperator.dump();
+					sortSelectOperator.setDistinct(distinct);
+					sortSelectOperator.dump();
 				}
 			}
-
-			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && hasProjection(selectItems) == true  && where == null && joins == null ) {
 				if (orderBy == null) {
 					ProjectOperator projectOperator = new ProjectOperator(
 						databaseDir + "/data/" + tableName + ".csv", schema.get(tableName), selectItems);
+					projectOperator.setDistinct(distinct);
 					projectOperator.dump();
 				}
 				else {
 					orderBy = orderBy.split("\\.")[1];
 					SortProjectOperator sortProjectOperator = new SortProjectOperator(
 						databaseDir + "/data/" + tableName + ".csv", schema.get(tableName), selectItems, orderBy);
+					sortProjectOperator.setDistinct(distinct);
 					sortProjectOperator.dump();
 				}
 			}
@@ -110,17 +113,17 @@ public class QueryPlan {
 				if (orderBy == null) {
 					ProjectSelectOperator projectSelectOperator = new ProjectSelectOperator(
 						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), selectItems);
+					projectSelectOperator.setDistinct(distinct);
 					projectSelectOperator.dump();
 				}
 				else {
 					orderBy = orderBy.split("\\.")[1];
 					SortProjectSelectOperator sortProjectSelectOperator = new SortProjectSelectOperator(
 						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), selectItems, orderBy);
+					sortProjectSelectOperator.setDistinct(distinct);
 					sortProjectSelectOperator.dump();
 				}
 			}
-
-			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() == 1) {
 				if (orderBy == null) {
@@ -134,6 +137,7 @@ public class QueryPlan {
 						String joinAlias = joins.get(0).toString().split(" ").length == 2 ? joins.get(0).toString().split(" ")[1] : "";
 						joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias);
 					}
+					joinOperator.setDistinct(distinct);
 					joinOperator.dump();
 				}
 				else {
@@ -147,6 +151,7 @@ public class QueryPlan {
 						String joinAlias = joins.get(0).toString().split(" ").length == 2 ? joins.get(0).toString().split(" ")[1] : "";
 						sortJoinOperator = new SortJoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias, orderBy);
 					}
+					sortJoinOperator.setDistinct(distinct);
 					sortJoinOperator.dump();
 				}
 
@@ -168,6 +173,7 @@ public class QueryPlan {
 					else {
 						joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, aliases);
 					}
+					joinTupleListOperator.setDistinct(distinct);
 					joinTupleListOperator.dump();
 				}
 				else {
@@ -178,6 +184,7 @@ public class QueryPlan {
 					else {
 						sortJoinTupleListOperator = new SortJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, aliases, orderBy);
 					}
+					sortJoinTupleListOperator.setDistinct(distinct);
 					sortJoinTupleListOperator.dump();
 				}
 
@@ -192,6 +199,7 @@ public class QueryPlan {
 					else {
 						projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, aliases);
 					}
+					projectJoinTupleListOperator.setDistinct(distinct);
 					projectJoinTupleListOperator.dump();	
 				}
 				else {
@@ -202,11 +210,12 @@ public class QueryPlan {
 					else {
 						sortProjectJoinTupleListOperator = new SortProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, aliases, orderBy);
 					}
+					sortProjectJoinTupleListOperator.setDistinct(distinct);
 					sortProjectJoinTupleListOperator.dump();
 				}
 			}
 
-
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

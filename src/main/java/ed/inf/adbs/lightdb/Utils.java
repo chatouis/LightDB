@@ -141,6 +141,15 @@ public class Utils {
 		return null;
 	}
 
+	public static Boolean parsingDistinct(String queryFile) throws FileNotFoundException, JSQLParserException {
+		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
+		if (statement != null) {
+			PlainSelect plainSelect = (PlainSelect) statement;
+			return plainSelect.getDistinct() != null;
+		}
+		return null;
+	}
+
 	//  Parsing example
 	public static void parsingExample(String filename) {
 		try {
