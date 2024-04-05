@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import ed.inf.adbs.lightdb.sort.*;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
@@ -51,6 +52,7 @@ public class QueryPlan {
 			Expression where = Utils.parsingWhere(inputSQL);
 			List<SelectItem<?>> selectItems = Utils.parsingSelectItems(inputSQL);
 			List<String> aliases = Utils.parsingAliases(inputSQL);
+			String orderBy = Utils.parsingOrderBy(inputSQL);
 
 			String tableName = fromItem.toString();
 			if (aliases != null) {
@@ -60,46 +62,94 @@ public class QueryPlan {
 			Utils.logger.log(Level.INFO, "----------------------------------");
 			
 			if (fromItem != null && where == null && joins == null && hasProjection(selectItems) == false) {
-				ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + tableName + ".csv");
-				scanOperator.dump();
+				if (orderBy == null) {
+					ScanOperator scanOperator = new ScanOperator(databaseDir + "/data/" + tableName + ".csv");
+					scanOperator.dump();
+				}
+				else {
+					orderBy = orderBy.split("\\.")[1];
+					SortScanOperator sortScanOperator = new SortScanOperator(
+						databaseDir + "/data/" + tableName + ".csv", orderBy, schema.get(tableName));
+					sortScanOperator.dump();
+				}
 			}
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && where != null && joins == null && hasProjection(selectItems) == false){
-				SelectOperator selectOperator = new SelectOperator(
-					databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName));
-				selectOperator.dump();
+				if (orderBy == null) {
+					SelectOperator selectOperator = new SelectOperator(
+						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName));
+					selectOperator.dump();
+				}
+				else {
+					orderBy = orderBy.split("\\.")[1];
+					SortSelectOperator sortSelectOperator = new SortSelectOperator(
+						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), orderBy);
+						sortSelectOperator.dump();
+				}
 			}
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && hasProjection(selectItems) == true  && where == null && joins == null ) {
-				ProjectOperator projectOperator = new ProjectOperator(
-					databaseDir + "/data/" + tableName + ".csv", schema.get(tableName), selectItems);
-				projectOperator.dump();
+				if (orderBy == null) {
+					ProjectOperator projectOperator = new ProjectOperator(
+						databaseDir + "/data/" + tableName + ".csv", schema.get(tableName), selectItems);
+					projectOperator.dump();
+				}
+				else {
+					orderBy = orderBy.split("\\.")[1];
+					SortProjectOperator sortProjectOperator = new SortProjectOperator(
+						databaseDir + "/data/" + tableName + ".csv", schema.get(tableName), selectItems, orderBy);
+					sortProjectOperator.dump();
+				}
 			}
 
 			if (fromItem != null && hasProjection(selectItems) == true && where != null && joins == null ) {
-				ProjectSelectOperator projectSelectOperator = new ProjectSelectOperator(
-					databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), selectItems);
-				projectSelectOperator.dump();
+				if (orderBy == null) {
+					ProjectSelectOperator projectSelectOperator = new ProjectSelectOperator(
+						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), selectItems);
+					projectSelectOperator.dump();
+				}
+				else {
+					orderBy = orderBy.split("\\.")[1];
+					SortProjectSelectOperator sortProjectSelectOperator = new SortProjectSelectOperator(
+						databaseDir + "/data/" + tableName + ".csv", where, schema.get(tableName), selectItems, orderBy);
+					sortProjectSelectOperator.dump();
+				}
 			}
 
 			Utils.logger.log(Level.INFO, "----------------------------------");
 
 			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() == 1) {
-				String joinName = joins.get(0).toString().split(" ")[0];
-				JoinOperator joinOperator;
-				if (aliases == null) {
-					joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema);
+				if (orderBy == null) {
+					String joinName = joins.get(0).toString().split(" ")[0];
+					JoinOperator joinOperator;
+					if (aliases == null) {
+						joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema);
+					}
+					else {
+						String tableAlias = fromItem.toString().split(" ").length == 2 ? fromItem.toString().split(" ")[1] : "";
+						String joinAlias = joins.get(0).toString().split(" ").length == 2 ? joins.get(0).toString().split(" ")[1] : "";
+						joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias);
+					}
+					joinOperator.dump();
 				}
 				else {
-					String tableAlias = fromItem.toString().split(" ")[1];
-					String joinAlias = joins.get(0).toString().split(" ")[1];
-					joinOperator = new JoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias);
+					String joinName = joins.get(0).toString().split(" ")[0];
+					SortJoinOperator sortJoinOperator;
+					if (aliases == null) {
+						sortJoinOperator = new SortJoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, orderBy);
+					}
+					else {
+						String tableAlias = fromItem.toString().split(" ").length == 2 ? fromItem.toString().split(" ")[1] : "";
+						String joinAlias = joins.get(0).toString().split(" ").length == 2 ? joins.get(0).toString().split(" ")[1] : "";
+						sortJoinOperator = new SortJoinOperator(databaseDir + "/data/" + tableName + ".csv", databaseDir + "/data/" + joinName + ".csv", where, schema, tableAlias, joinAlias, orderBy);
+					}
+					sortJoinOperator.dump();
 				}
-				joinOperator.dump();
+
 			}
 
 			if (fromItem != null && hasProjection(selectItems) == false && joins != null && where != null && joins.size() > 1) {
@@ -110,26 +160,50 @@ public class QueryPlan {
 				// sortTable((Table)fromItem, joins);
 				// JoinTupleListOperator joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, tableNameList, schema, tableToWhereExpression);
 				// -----------------
-
-				JoinTupleListOperator joinTupleListOperator;
-				if (aliases == null) {
-					joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema);
+				if (orderBy == null) {
+					JoinTupleListOperator joinTupleListOperator;
+					if (aliases == null) {
+						joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema);
+					}
+					else {
+						joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, aliases);
+					}
+					joinTupleListOperator.dump();
 				}
 				else {
-					joinTupleListOperator = new JoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, aliases);
+					SortJoinTupleListOperator sortJoinTupleListOperator;
+					if (aliases == null) {
+						sortJoinTupleListOperator = new SortJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, orderBy);
+					}
+					else {
+						sortJoinTupleListOperator = new SortJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, aliases, orderBy);
+					}
+					sortJoinTupleListOperator.dump();
 				}
-				joinTupleListOperator.dump();
+
 			}
 
 			if (fromItem != null && hasProjection(selectItems) == true && joins != null && where != null && joins.size() > 1) {
-				ProjectJoinTupleListOperator projectJoinTupleListOperator;
-				if (aliases == null) {
-					projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems);
+				if (orderBy == null) {
+					ProjectJoinTupleListOperator projectJoinTupleListOperator;
+					if (aliases == null) {
+						projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems);
+					}
+					else {
+						projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, aliases);
+					}
+					projectJoinTupleListOperator.dump();	
 				}
 				else {
-					projectJoinTupleListOperator = new ProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, aliases);
+					SortProjectJoinTupleListOperator sortProjectJoinTupleListOperator;
+					if (aliases == null) {
+						sortProjectJoinTupleListOperator = new SortProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, orderBy);
+					}
+					else {
+						sortProjectJoinTupleListOperator = new SortProjectJoinTupleListOperator(databaseDir, where, (Table)fromItem, joins, schema, selectItems, aliases, orderBy);
+					}
+					sortProjectJoinTupleListOperator.dump();
 				}
-				projectJoinTupleListOperator.dump();
 			}
 
 

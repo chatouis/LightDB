@@ -36,8 +36,18 @@ public class JoinOperator extends Operator{
         String leftTableName = pathToTableName(leftInputFile);
         String rightTableName = pathToTableName(rightIputFile);
         this.schema = new ArrayList<String>();
-        this.schema.addAll(schema.get(leftTableName).stream().map(columnName -> tableAlias + "." + columnName).collect(Collectors.toList()));
-        this.schema.addAll(schema.get(rightTableName).stream().map(columnName -> joinAlias + "." + columnName).collect(Collectors.toList()));
+        if (tableAlias != "") {
+            this.schema.addAll(schema.get(leftTableName).stream().map(columnName -> tableAlias + "." + columnName).collect(Collectors.toList()));
+        }
+        else {
+            this.schema.addAll(schema.get(leftTableName));
+        }
+        if (joinAlias != "") {
+            this.schema.addAll(schema.get(rightTableName).stream().map(columnName -> joinAlias + "." + columnName).collect(Collectors.toList()));
+        }
+        else {
+            this.schema.addAll(schema.get(rightTableName));
+        }
     }
 
 

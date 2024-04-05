@@ -14,9 +14,10 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class ProjectJoinTupleListOperator extends JoinTupleListOperator{
     List<SelectItem<?>> selectItems;
-    List<String> schema;
+    public List<String> schema;
     
-    public ProjectJoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins, Map<String, List<String>> schema, List<SelectItem<?>> selectItems) throws Exception {
+    public ProjectJoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins,
+             Map<String, List<String>> schema, List<SelectItem<?>> selectItems) throws Exception {
         super(databaseDir, whereExpression, table, joins, schema);
         this.selectItems = selectItems;
         this.schema = new ArrayList<String>();

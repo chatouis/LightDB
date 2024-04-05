@@ -16,13 +16,13 @@ public class JoinTupleListOperator extends Operator{
     String[] tableNameList;
     String[] inputFileList;
     ScanOperator[] scanOperatorList;
-    List<List<String>> schema;
+    protected List<List<String>> schema;
     Expression whereExpression;
     Expression[] runningExpressions;
-    String[] tuples;
+    protected String[] tuples;
     Boolean[] fullScaned;
-    int tableNum;
-    List<List<String>> tupleItemList;
+    protected int tableNum;
+    protected List<List<String>> tupleItemList;
     Map<String, List<BinaryExpression>> tableToWhereExpression;
 
     public JoinTupleListOperator(String databaseDir, Expression whereExpression, Table table, List<Join> joins, 

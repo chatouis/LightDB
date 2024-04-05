@@ -14,7 +14,7 @@ public class LightDB {
 
 
 		String databaseDir = "samples/db";
-		String inputSQL = "samples/input/query1.sql";
+		String inputSQL = "samples/input/query7.sql";
 		String outputFile = "samples/output/query1.csv";
 
 		// if (args.length != 3) {

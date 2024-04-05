@@ -23,6 +23,7 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.util.TablesNamesFinder;
@@ -126,6 +127,18 @@ public class Utils {
 		else {
 			return null;
 		}
+	}
+
+	public static String parsingOrderBy(String queryFile) throws FileNotFoundException, JSQLParserException {
+		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
+		if (statement != null) {
+			PlainSelect plainSelect = (PlainSelect) statement;
+			List<OrderByElement> orderBy = plainSelect.getOrderByElements();
+			if (orderBy != null) {
+				return orderBy.get(0).toString();
+			}
+		}
+		return null;
 	}
 
 	//  Parsing example

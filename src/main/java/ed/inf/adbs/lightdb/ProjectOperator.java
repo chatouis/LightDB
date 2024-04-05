@@ -6,7 +6,7 @@ import java.util.List;
 
 import net.sf.jsqlparser.statement.select.SelectItem;
 
-class ProjectOperator extends ScanOperator {
+public class ProjectOperator extends ScanOperator {
     List<SelectItem<?>> selectItems;
     List<String> schema;
 
