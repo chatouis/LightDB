@@ -55,7 +55,7 @@ public class QueryPlan {
 			List<String> aliases = Utils.parsingAliases(inputSQL);
 			String orderBy = Utils.parsingOrderBy(inputSQL);
 			Boolean distinct = Utils.parsingDistinct(inputSQL);
-
+			List<Expression> groupBy = Utils.parsingGroupBy(inputSQL);
 
 			String tableName = fromItem.toString();
 			if (aliases != null) {

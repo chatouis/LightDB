@@ -273,6 +273,16 @@ public class LightDBTest {
 		assertEquals("1, 200, 50, 4, 100, 50", joinOperator.getNextTuple());
 		assertEquals("1, 200, 50, 5, 100, 500", joinOperator.getNextTuple());
 		assertEquals("1, 200, 50, 6, 300, 400", joinOperator.getNextTuple());
+		assertEquals("2, 200, 200, 3, 100, 105", joinOperator.getNextTuple());
+		assertEquals("2, 200, 200, 4, 100, 50", joinOperator.getNextTuple());
+		assertEquals("2, 200, 200, 5, 100, 500", joinOperator.getNextTuple());
+		assertEquals("2, 200, 200, 6, 300, 400", joinOperator.getNextTuple());
+		assertEquals("3, 100, 105, 4, 100, 50", joinOperator.getNextTuple());
+		assertEquals("3, 100, 105, 5, 100, 500", joinOperator.getNextTuple());
+		assertEquals("3, 100, 105, 6, 300, 400", joinOperator.getNextTuple());
+		assertEquals("4, 100, 50, 5, 100, 500", joinOperator.getNextTuple());
+		assertEquals("4, 100, 50, 6, 300, 400", joinOperator.getNextTuple());
+		assertEquals("5, 100, 500, 6, 300, 400", joinOperator.getNextTuple());
 		assertEquals(null, joinOperator.getNextTuple());
 	}
 }

@@ -150,6 +150,15 @@ public class Utils {
 		return null;
 	}
 
+	public static List<Expression> parsingGroupBy(String queryFile) throws FileNotFoundException, JSQLParserException {
+		Statement statement = CCJSqlParserUtil.parse(new FileReader(queryFile));
+		if (statement != null) {
+			PlainSelect plainSelect = (PlainSelect) statement;
+			return (List<Expression>) plainSelect.getGroupBy();
+		}
+		return null;
+	}
+
 	//  Parsing example
 	public static void parsingExample(String filename) {
 		try {

@@ -14,7 +14,7 @@ public class LightDB {
 
 
 		String databaseDir = "samples/db";
-		String inputSQL = "samples/input/query7.sql";
+		String inputSQL = "samples/input/query6.sql";
 		String outputFile = "samples/output/query1.csv";
 
 		// if (args.length != 3) {
@@ -24,8 +24,6 @@ public class LightDB {
 		// String databaseDir = args[0];
 		// String inputSQL = args[1];
 		// String outputFile = args[2];
-
-		// parsingExample(inputSQL);
 
 		QueryPlan queryPlan = new QueryPlan(inputSQL, databaseDir);
 		queryPlan.execute();

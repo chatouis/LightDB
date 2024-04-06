@@ -59,13 +59,12 @@ public class JoinOperator extends Operator{
         // rightTuple is faster pointer
         if (rightTuple == null) {
             leftTuple = leftScanOperator.getNextTuple();
-            if (leftTuple == null) {
-                return null;
-            }
         }
         rightTuple = rightScanOperator.getNextTuple();
         if (rightTuple == null) {
-            return null;
+            leftTuple = leftScanOperator.getNextTuple();
+            rightScanOperator.reset();
+            rightTuple = rightScanOperator.getNextTuple();
         }
         EvaluateCondition deparser = new EvaluateCondition(schema, whereExpression, leftTuple + "," + rightTuple) {};
         deparser.setBuffer(new StringBuilder());
